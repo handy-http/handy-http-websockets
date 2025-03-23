@@ -1,0 +1,13 @@
+{
+	"authors": [
+		"Andrew Lalis"
+	],
+	"copyright": "Copyright © 2025, Andrew Lalis",
+	"dependencies": {
+		"handy-http-primitives": "~>1.5",
+		"slf4d": "~>3"
+	},
+	"description": "mplementati",
+	"license": "CC0",
+	"name": "handy-http-websockets"
+}

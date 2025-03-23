@@ -1,0 +1,8 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"handy-http-primitives": "1.5.0",
+		"slf4d": "3.0.1",
+		"streams": "3.6.0"
+	}
+}

@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/handy-http-websockets
+handy-http-websockets.so
+handy-http-websockets.dylib
+handy-http-websockets.dll
+handy-http-websockets.a
+handy-http-websockets.lib
+handy-http-websockets-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+*.a
