@@ -5,7 +5,8 @@
 	"copyright": "Copyright © 2025, Andrew Lalis",
 	"dependencies": {
 		"handy-http-primitives": "~>1.5",
-		"slf4d": "~>3"
+		"slf4d": "~>3",
+		"photon": "~>0.10"
 	},
 	"description": "mplementati",
 	"license": "CC0",

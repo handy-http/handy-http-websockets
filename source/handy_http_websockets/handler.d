@@ -5,6 +5,8 @@ import slf4d;
 import streams;
 
 import handy_http_websockets.components;
+import handy_http_websockets.connection;
+import handy_http_websockets.manager : webSocketManager;
 
 /**
  * An HTTP request handler implementation that's used as the entrypoint for
@@ -30,7 +32,11 @@ class WebSocketRequestHandler : HttpRequestHandler {
             return;
         }
         sendSwitchingProtocolsResponse(request, response);
-        
+        webSocketManager.addConnection(new WebSocketConnection(
+            messageHandler,
+            request.inputStream,
+            response.outputStream
+        ));
     }
 }
 
@@ -69,6 +75,7 @@ private void sendSwitchingProtocolsResponse(in ServerHttpRequest request, ref Se
     response.headers.add("Upgrade", "websocket");
     response.headers.add("Connection", "Upgrade");
     response.headers.add("Sec-WebSocket-Accept", generateWebSocketAcceptHeader(key));
+    response.outputStream.writeToStream([]); // Trigger this to flush the response.
 }
 
 private string generateWebSocketAcceptHeader(string key) {

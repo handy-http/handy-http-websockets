@@ -19,10 +19,10 @@ class WebSocketConnection {
     immutable UUID id;
 
     /// Stream for reading from the client.
-    private InputStream!ubyte inputStream;
+    InputStream!ubyte inputStream;
 
     /// Stream for writing to the client.
-    private OutputStream!ubyte outputStream;
+    OutputStream!ubyte outputStream;
 
     /**
      * The message handler that is called to handle this connection's events.
