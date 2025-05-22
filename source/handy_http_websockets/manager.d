@@ -6,17 +6,28 @@ import std.uuid;
 import streams;
 import slf4d;
 import photon : go;
+import handy_http_primitives.request : ServerHttpRequest;
 
 import handy_http_websockets.connection;
 import handy_http_websockets.components;
 import handy_http_websockets.frame;
 
+/** 
+ * Global singleton websocket manager that handles all websocket connections.
+ * Generally, the `addConnection` method will be called by a `WebSocketRequestHandler`
+ * that you've registered in your server, so users will most often use the
+ * manager to access the set of connected clients, and broadcast messages to
+ * them.
+ */
 __gshared WebSocketManager webSocketManager;
 
 static this() {
     webSocketManager = new WebSocketManager();
 }
 
+/**
+ * The websocket manager is responsible for managing all websocket connections.
+ */
 class WebSocketManager {
     private WebSocketConnection[UUID] connections;
     private ReadWriteMutex connectionsMutex;
@@ -25,36 +36,82 @@ class WebSocketManager {
         connectionsMutex = new ReadWriteMutex();
     }
 
-    void addConnection(WebSocketConnection conn) {
+    /** 
+     * Adds a connection to the manager and starts listening for messages.
+     * Usually only called by a `WebSocketRequestHandler`.
+     * Params:
+     *   conn = The connection to add.
+     *   request = The HTTP request that initiated the connection.
+     */
+    void addConnection(WebSocketConnection conn, in ServerHttpRequest request) {
         synchronized(connectionsMutex.writer) {
             connections[conn.id] = conn;
         }
         go(() => connectionHandler(conn));
-        conn.getMessageHandler().onConnectionEstablished(conn);
+        conn.getMessageHandler().onConnectionEstablished(conn, request);
+        debugF!"Added websocket connection: %s"(conn.id.toString());
     }
 
+    /**
+     * Removes a websocket connection from the manager and closes it. This is
+     * called automatically if the client sends a CLOSE frame, but you can also
+     * call it yourself.
+     * Params:
+     *   conn = 
+     */
     void removeConnection(WebSocketConnection conn) {
         synchronized(connectionsMutex.writer) {
             connections.remove(conn.id);
         }
         conn.close();
+        debugF!"Removed websocket connection: %s"(conn.id.toString());
     }
 
+    /**
+     * Broadcasts a message to all connected clients.
+     * Params:
+     *   text = The text to send to all clients.
+     */
     void broadcast(string text) {
+        debugF!"Broadcasting %d-length text message to all clients."(text.length);
         synchronized(connectionsMutex.reader) {
             foreach (id, conn; connections) {
                 try {
                     conn.sendTextMessage(text);
                 } catch (WebSocketException e) {
-                    warnF!"Failed to broadcast to client %s."(id.toString());
+                    warnF!"Failed to broadcast to client %s: %s"(id.toString(), e.msg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Broadcasts a binary message to all connected clients.
+     * Params:
+     *   data = The binary data to send to all clients.
+     */
+    void broadcast(ubyte[] data) {
+        debugF!"Broadcasting %d bytes of binary data to all clients."(data.length);
+        synchronized(connectionsMutex.reader) {
+            foreach (id, conn; connections) {
+                try {
+                    conn.sendBinaryMessage(data);
+                } catch (WebSocketException e) {
+                    warnF!"Failed to broadcast to client %s: %s"(id.toString(), e.msg);
                 }
             }
         }
     }
 }
 
-void connectionHandler(WebSocketConnection conn) {
-    infoF!"Started routine to monitor websocket connection %s."(conn.id.toString());
+/**
+ * Internal routine that runs in a fiber, and handles an individual websocket
+ * connection by listening for messages.
+ * Params:
+ *   conn = The connection to handle.
+ */
+private void connectionHandler(WebSocketConnection conn) {
+    traceF!"Started routine to monitor websocket connection %s."(conn.id.toString());
     bool running = true;
     while (running) {
         try {
@@ -82,10 +139,16 @@ void connectionHandler(WebSocketConnection conn) {
             running = false;
         }
     }
-    infoF!"Routine to monitor websocket connection %s has ended."(conn.id.toString());
+    traceF!"Routine to monitor websocket connection %s has ended."(conn.id.toString());
 }
 
-void handleClientDataFrame(WebSocketConnection conn, WebSocketFrame f) {
+/** 
+ * Handles a websocket data frame (text or binary).
+ * Params:
+ *   conn = The connection from which the frame was received.
+ *   f = The frame that was received.
+ */
+private void handleClientDataFrame(WebSocketConnection conn, WebSocketFrame f) {
     bool isText = f.opcode == WebSocketFrameOpcode.TEXT_FRAME;
     ubyte[] payload = f.payload.dup;
     while (!f.finalFragment) {

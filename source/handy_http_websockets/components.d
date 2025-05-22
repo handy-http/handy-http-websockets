@@ -1,6 +1,7 @@
 module handy_http_websockets.components;
 
 import handy_http_websockets.connection;
+import handy_http_primitives.request : ServerHttpRequest;
 
 /**
  * An exception that's thrown if an unexpected situation arises while dealing
@@ -8,6 +9,7 @@ import handy_http_websockets.connection;
  */
 class WebSocketException : Exception {
     import std.exception : basicExceptionCtors;
+    import handy_http_primitives.request;
     mixin basicExceptionCtors;
 }
 
@@ -47,8 +49,9 @@ abstract class WebSocketMessageHandler {
      * Called when a new websocket connection is established.
      * Params:
      *   conn = The new connection.
+     *   request = The HTTP request that initiated the connection.
      */
-    void onConnectionEstablished(WebSocketConnection conn) {}
+    void onConnectionEstablished(WebSocketConnection conn, in ServerHttpRequest request) {}
 
     /**
      * Called when a text message is received.

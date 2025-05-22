@@ -17,10 +17,25 @@ import handy_http_websockets.manager : webSocketManager;
 class WebSocketRequestHandler : HttpRequestHandler {
     private WebSocketMessageHandler messageHandler;
 
+    /** 
+     * Constructs a request handler that will use the given message handler to
+     * deal with events from any websocket connections that are established.
+     * Params:
+     *   messageHandler = The message handler to use.
+     */
     this(WebSocketMessageHandler messageHandler) {
         this.messageHandler = messageHandler;
     }
 
+    /** 
+     * Handles an incoming HTTP request and tries to establish a websocket
+     * connection by first verifying the request, then sending a switching-
+     * protocols response, and finally registering the new connection with the
+     * websocket manager.
+     * Params:
+     *   request = The request to read from.
+     *   response = The response to write to.
+     */
     void handle(ref ServerHttpRequest request, ref ServerHttpResponse response) {
         auto verification = verifyWebSocketRequest(request);
         if (verification == RequestVerificationResponse.INVALID_HTTP_METHOD) {
@@ -36,7 +51,7 @@ class WebSocketRequestHandler : HttpRequestHandler {
             messageHandler,
             request.inputStream,
             response.outputStream
-        ));
+        ), request);
     }
 }
 

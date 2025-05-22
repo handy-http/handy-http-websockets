@@ -36,6 +36,10 @@ class WebSocketConnection {
         this.id = randomUUID();
     }
 
+    /** 
+     * Gets the message handler that handles events for this connection.
+     * Returns: The message handler.
+     */
     WebSocketMessageHandler getMessageHandler() {
         return this.messageHandler;
     }
